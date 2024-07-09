@@ -35,7 +35,7 @@ This library is used for generating hierarchical (using Sugiyama Layout) and Mul
   #### Building & Installation
   
   ```shell script
-      $ git clone https://github.com/Habush/annotation_graph
+      $ git clone https://github.com/rejuve-bio/annotation_graph
       $ cd annotation_graph
       $ mkdir build && cd build
       $ cmake ..
