@@ -16,14 +16,14 @@ along with this software.  If not, see
 
 #ifndef ANNOTATION_GRAPH_GRAPHPROCESSOR_H
 #define ANNOTATION_GRAPH_GRAPHPROCESSOR_H
+#include "EdgeInfo.h"
+#include "NodeInfo.h"
+#include "Timer.h"
+#include <boost/filesystem.hpp>
+#include <ogdf/basic/Graph.h>
 #include <ogdf/fileformats/GraphIO.h>
 #include <rapidjson/document.h>
-#include <ogdf/basic/Graph.h>
-#include <boost/filesystem.hpp>
 #include <thread>
-#include "NodeInfo.h"
-#include "EdgeInfo.h"
-#include "Timer.h"
 
 using namespace ogdf;
 using namespace rapidjson;
@@ -31,34 +31,33 @@ using namespace boost::filesystem;
 using namespace std;
 
 namespace annotation_graph {
-    typedef function<bool(const Value&)> NodeFilter;
+// typedef function<bool(const Value&)> NodeFilter;
 
-    typedef vector<NodeInfo> NodeInfos;
-    typedef vector<EdgeInfo> EdgeInfos;
-    typedef vector<thread> Threads;
+typedef vector<NodeInfo> NodeInfos;
+typedef vector<EdgeInfo> EdgeInfos;
+typedef vector<thread> Threads;
 
-    class GraphProcessor {
-    public:
-        GraphProcessor(const string& path): _path(path){}
+class GraphProcessor {
+public:
+  GraphProcessor(const string &path) : _path(path) {}
 
-        void processGraph();
+  void processGraph();
 
-    private:
-        void readNodes(Graph& G, GraphAttributes& GA, NodeInfos &nodeInfos, const function<bool(const
-        Value&)>& filterNodes);
-        void readEdges(Graph& G, EdgeInfos & edgeInfos, GraphAttributes& GA);
-        bool parseJSON();
-        void writeJSON(const Graph& graph, const GraphAttributes &GA,
-                                       NodeInfos &nodeInfos, EdgeInfos &edgeInfos, const path& p);
-        void startTimer(const string& msg);
-        void stopTimer(const string& msg);
+private:
+  void readNodes(Graph &G, GraphAttributes &GA, NodeInfos &nodeInfos
+                 /*const function<bool(const Value &)> &filterNodes*/);
+  void readEdges(Graph &G, EdgeInfos &edgeInfos, GraphAttributes &GA);
+  bool parseJSON();
+  void writeJSON(const Graph &graph, const GraphAttributes &GA,
+                 NodeInfos &nodeInfos, EdgeInfos &edgeInfos, const path &p);
+  void startTimer(const string &msg);
+  void stopTimer(const string &msg);
 
-        Document _document;
-        path _path;
-        Timer _timer;
-        Threads _threads;
-    };
-}
+  Document _document;
+  path _path;
+  Timer _timer;
+  Threads _threads;
+};
+} // namespace annotation_graph
 
-
-#endif //ANNOTATION_GRAPH_GRAPHPROCESSOR_H
+#endif // ANNOTATION_GRAPH_GRAPHPROCESSOR_H

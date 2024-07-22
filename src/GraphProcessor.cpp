@@ -38,62 +38,30 @@ void GraphProcessor::processGraph() {
   }
 
   // Separate the graph into GO and nonGO subgraphs
-  Graph goGraph;
-  GraphAttributes goGraphAttr(
-      goGraph, GraphAttributes::nodeGraphics | GraphAttributes::nodeId |
-                   GraphAttributes::edgeGraphics | GraphAttributes::nodeLabel |
-                   GraphAttributes::edgeLabel | GraphAttributes::edgeType |
-                   GraphAttributes::edgeStyle | GraphAttributes::nodeStyle);
-  NodeInfos goNodeInfos;
-  EdgeInfos goEdgesInfos;
-
-  Graph nonGOGraph;
-  GraphAttributes nonGOGraphAttr(
-      nonGOGraph, GraphAttributes::nodeGraphics | GraphAttributes::nodeId |
-                      GraphAttributes::edgeGraphics |
-                      GraphAttributes::nodeLabel | GraphAttributes::edgeLabel |
-                      GraphAttributes::edgeType | GraphAttributes::edgeStyle |
-                      GraphAttributes::nodeStyle);
-
-  NodeInfos nonGoNodeInfos;
-  EdgeInfos nonGoEdgesInfos;
-
-  NodeFilter goFilter = [](const Value &data) {
-    return isGO(data) || isMain(data);
-  };
-
-  NodeFilter nonGOFilter = [](const Value &data) {
-    return !isGO(data) || isMain(data);
-  };
+  Graph graph;
+  GraphAttributes graphAttr(
+      graph, GraphAttributes::nodeGraphics | GraphAttributes::nodeId |
+                 GraphAttributes::edgeGraphics | GraphAttributes::nodeLabel |
+                 GraphAttributes::edgeLabel | GraphAttributes::edgeType |
+                 GraphAttributes::edgeStyle | GraphAttributes::nodeStyle);
+  NodeInfos NodeInfos;
+  EdgeInfos EdgesInfos;
 
   startTimer("Building Graph...");
   // Build GO graph
-  readNodes(goGraph, goGraphAttr, goNodeInfos, goFilter);
-  readEdges(goGraph, goEdgesInfos, goGraphAttr);
-  // Build non-GO graph
-  readNodes(nonGOGraph, nonGOGraphAttr, nonGoNodeInfos, nonGOFilter);
-  readEdges(nonGOGraph, nonGoEdgesInfos, nonGOGraphAttr);
+  readNodes(graph, graphAttr, NodeInfos);
+  readEdges(graph, EdgesInfos, graphAttr);
   stopTimer("Finished building graph.");
 
-  if (goGraph.numberOfNodes() > 1) {
+  if (graph.numberOfNodes() > 1) {
     _threads.push_back(
-        thread([&goGraph, &goGraphAttr, &goNodeInfos, &goEdgesInfos, this]() {
+        thread([&graph, &graphAttr, &NodeInfos, &EdgesInfos, this]() {
           startTimer("Running GO Layout..");
-          hierarchyLayout(goGraphAttr);
-          writeJSON(goGraph, goGraphAttr, goNodeInfos, goEdgesInfos,
-                    _path.parent_path() / path("go.json"));
+          hierarchyLayout(graphAttr);
+          writeJSON(graph, graphAttr, NodeInfos, EdgesInfos,
+                    _path.parent_path() / path("graph.json"));
           stopTimer("Finished Running GO Layout.");
         }));
-  }
-  if (nonGOGraph.numberOfNodes() > 1) {
-    _threads.push_back(thread([&nonGOGraph, &nonGOGraphAttr, &nonGoNodeInfos,
-                               &nonGoEdgesInfos, this]() {
-      startTimer("Running MLL Layout..");
-      multiLevelLayout(nonGOGraphAttr);
-      writeJSON(nonGOGraph, nonGOGraphAttr, nonGoNodeInfos, nonGoEdgesInfos,
-                _path.parent_path() / path("nongo.json"));
-      stopTimer("Finished Running MLL Layout.");
-    }));
   }
 
   for (thread &t : _threads) {
@@ -102,33 +70,31 @@ void GraphProcessor::processGraph() {
 }
 
 void GraphProcessor::readNodes(Graph &G, GraphAttributes &GA,
-                               NodeInfos &nodeInfos,
-                               const NodeFilter &filterNodes) {
+                               NodeInfos &nodeInfos) {
   const Value &nodes = _document["nodes"];
   assert(nodes.IsArray());
   for (SizeType i = 0; i < nodes.Size(); i++) {
     const Value &data = nodes[i].GetObject()["data"];
-    if (true) {
-      node elm = G.newNode();
-      GA.idNode(elm) = i;
-      std::map<std::string, std::variant<std::string, std::vector<std::string>>>
-          properties;
-      for (auto it = data.MemberBegin(); it != data.MemberEnd(); ++it) {
-        if (it->value.IsString()) {
-          properties[it->name.GetString()] = it->value.GetString();
-        } else if (it->value.IsArray()) {
-          std::vector<std::string> arrayValues;
-          for (const auto &val : it->value.GetArray()) {
-            arrayValues.push_back(val.GetString());
-          }
-          properties[it->name.GetString()] = arrayValues;
+
+    node elm = G.newNode();
+    GA.idNode(elm) = i;
+    std::map<std::string, std::variant<std::string, std::vector<std::string>>>
+        properties;
+    for (auto it = data.MemberBegin(); it != data.MemberEnd(); ++it) {
+      if (it->value.IsString()) {
+        properties[it->name.GetString()] = it->value.GetString();
+      } else if (it->value.IsArray()) {
+        std::vector<std::string> arrayValues;
+        for (const auto &val : it->value.GetArray()) {
+          arrayValues.push_back(val.GetString());
         }
+        properties[it->name.GetString()] = arrayValues;
       }
-      nodeInfos.emplace_back(properties);
-      GA.label(elm) = std::get<std::string>(properties["id"]);
-      GA.width(elm) = 300;
-      GA.height(elm) = 40;
     }
+    nodeInfos.emplace_back(properties);
+    GA.label(elm) = std::get<std::string>(properties["id"]);
+    GA.width(elm) = 300;
+    GA.height(elm) = 40;
   }
 }
 
@@ -138,7 +104,6 @@ void GraphProcessor::readEdges(Graph &G, EdgeInfos &edgeInfos,
   assert(edges.IsArray());
   std::string sourceId, targetId, edgeId;
   node source, target;
-  cout << "now building edges" << endl;
   for (SizeType i = 0; i < edges.Size(); i++) {
     const Value &data = edges[i].GetObject()["data"];
     sourceId = data["source_node"].GetString();
