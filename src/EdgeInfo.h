@@ -14,44 +14,44 @@ along with this software.  If not, see
 <http://www.gnu.org/licenses/>.
 **/
 
+#include "rapidjson/document.h"
+#include <map>
 #include <string>
+#include <variant>
 #include <vector>
+
 using namespace rapidjson;
+
 namespace annotation_graph {
-    struct EdgeInfo {
+struct EdgeInfo {
+  EdgeInfo(const std::map<std::string,
+                          std::variant<std::string, std::vector<std::string>>>
+               &properties)
+      : properties(properties) {}
 
-        EdgeInfo(const std::string &id, const std::string &name ,const std::string &source, const std::string &target,
-                 const std::string &pubmed, const std::string &subgroup, const std::vector<std::string> &groups) :
-                 id(id), name(name), source(source), target(target), pubmed(pubmed), subgroup(subgroup), groups(groups) {}
+  std::map<std::string, std::variant<std::string, std::vector<std::string>>>
+      properties;
 
-        std::string id;
-        std::string name;
-        std::string source;
-        std::string target;
-        std::string pubmed;
-        std::string subgroup;
-        std::vector<std::string> groups;
-
-        void serialize(Document& doc, Value& obj){
-            Value data(kObjectType);
-            data.AddMember("id", id, doc.GetAllocator());
-            data.AddMember("name", name, doc.GetAllocator());
-            data.AddMember("source", source, doc.GetAllocator());
-            data.AddMember("target", target, doc.GetAllocator());
-            data.AddMember("pubmedId", pubmed, doc.GetAllocator());
-            data.AddMember("subgroup", subgroup, doc.GetAllocator());
-            Value grs(kArrayType);
-            for(const std::string& gr: groups){
-                Value val;
-                val.SetString(gr, doc.GetAllocator());
-                grs.PushBack(val, doc.GetAllocator());
-            }
-            data.AddMember("group", grs, doc.GetAllocator());
-            obj.AddMember("data", data, doc.GetAllocator());
-            obj.AddMember("group", "edges", doc.GetAllocator());
-
+  void serialize(Document &doc, Value &obj) {
+    Value data(kObjectType);
+    for (const auto &[key, value] : properties) {
+      if (std::holds_alternative<std::string>(value)) {
+        data.AddMember(Value().SetString(key.c_str(), doc.GetAllocator()),
+                       Value().SetString(std::get<std::string>(value).c_str(),
+                                         doc.GetAllocator()),
+                       doc.GetAllocator());
+      } else if (std::holds_alternative<std::vector<std::string>>(value)) {
+        Value arr(kArrayType);
+        for (const auto &str : std::get<std::vector<std::string>>(value)) {
+          arr.PushBack(Value().SetString(str.c_str(), doc.GetAllocator()),
+                       doc.GetAllocator());
         }
-
-    };
-}
-
+        data.AddMember(Value().SetString(key.c_str(), doc.GetAllocator()), arr,
+                       doc.GetAllocator());
+      }
+    }
+    obj.AddMember("data", data, doc.GetAllocator());
+    // obj.AddMember("group", "edges", doc.GetAllocator());
+  }
+};
+} // namespace annotation_graph

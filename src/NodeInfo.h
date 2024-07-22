@@ -17,40 +17,32 @@ along with this software.  If not, see
 //
 #include <string>
 #include <vector>
+#include <map>
+#include <variant>
 #include "rapidjson/document.h"
 
 using namespace rapidjson;
+
 namespace annotation_graph {
     struct NodeInfo {
-        NodeInfo(const std::string &id, const std::string &type ,const std::string &name, const std::string &definition,
-                 const std::string &location, const std::vector<std::string> &groups)
-                 : id(id), name(name), type(type),
-                    definition(definition),
-                    location(location),
-                    groups(groups) {}
+        NodeInfo(const std::map<std::string, std::variant<std::string, std::vector<std::string>>>& properties)
+            : properties(properties) {}
 
-        std::string id;
-        std::string name;
-        std::string type;
-        std::string definition;
-        std::string location;
-        std::vector<std::string> groups;
+        std::map<std::string, std::variant<std::string, std::vector<std::string>>> properties;
 
-        void serialize(Document& doc, Value& obj, const double x, const double y){
+        void serialize(Document& doc, Value& obj, const double x, const double y) {
             Value data(kObjectType);
-            data.AddMember("id", id, doc.GetAllocator());
-            data.AddMember("type", type, doc.GetAllocator());
-            data.AddMember("name", name, doc.GetAllocator());
-            data.AddMember("definition", definition, doc.GetAllocator());
-            data.AddMember("location", location, doc.GetAllocator());
-
-            Value grs(kArrayType);
-            for(const std::string& gr: groups){
-                Value val;
-                val.SetString(gr, doc.GetAllocator());
-                grs.PushBack(val, doc.GetAllocator());
+            for (const auto& [key, value] : properties) {
+                if (std::holds_alternative<std::string>(value)) {
+                    data.AddMember(Value().SetString(key.c_str(), doc.GetAllocator()), Value().SetString(std::get<std::string>(value).c_str(), doc.GetAllocator()), doc.GetAllocator());
+                } else if (std::holds_alternative<std::vector<std::string>>(value)) {
+                    Value arr(kArrayType);
+                    for (const auto& str : std::get<std::vector<std::string>>(value)) {
+                        arr.PushBack(Value().SetString(str.c_str(), doc.GetAllocator()), doc.GetAllocator());
+                    }
+                    data.AddMember(Value().SetString(key.c_str(), doc.GetAllocator()), arr, doc.GetAllocator());
+                }
             }
-            data.AddMember("group", grs, doc.GetAllocator());
             obj.AddMember("data", data, doc.GetAllocator());
 
             Value pos(kObjectType);
@@ -58,7 +50,8 @@ namespace annotation_graph {
             pos.AddMember("y", y, doc.GetAllocator());
             obj.AddMember("position", pos, doc.GetAllocator());
 
-            obj.AddMember("group", "nodes", doc.GetAllocator());
+            //obj.AddMember("group", "nodes", doc.GetAllocator());
         }
     };
 }
+
