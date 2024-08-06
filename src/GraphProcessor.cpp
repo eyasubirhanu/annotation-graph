@@ -25,16 +25,16 @@ along with this software.  If not, see
 #include <iostream>
 #include <rapidjson/filereadstream.h>
 #include <rapidjson/filewritestream.h>
+#include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
 namespace annotation_graph {
 
-void GraphProcessor::processGraph() {
+string GraphProcessor::processGraph() {
   // Parse Json
   if (!parseJSON()) {
     throw std::runtime_error(
-        "Couldn't parse the json file. Make sure the file exists " +
-        _path.string());
+        "Couldn't parse the json file. Make sure the file exists ");
   }
 
   // Separate the graph into GO and nonGO subgraphs
@@ -58,15 +58,17 @@ void GraphProcessor::processGraph() {
         thread([&graph, &graphAttr, &NodeInfos, &EdgesInfos, this]() {
           startTimer("Running GO Layout..");
           hierarchyLayout(graphAttr);
-          writeJSON(graph, graphAttr, NodeInfos, EdgesInfos,
-                    _path.parent_path() / path("graph.json"));
-          stopTimer("Finished Running GO Layout.");
+          // return writeJSON(graph, graphAttr, NodeInfos, EdgesInfos,
+          //_path.parent_path() / path("graph.json"));
+          // stopTimer("Finished Running GO Layout.");
         }));
   }
 
   for (thread &t : _threads) {
     t.join();
   }
+
+  return writeJSON(graph, graphAttr, NodeInfos, EdgesInfos);
 }
 
 void GraphProcessor::readNodes(Graph &G, GraphAttributes &GA,
@@ -106,8 +108,8 @@ void GraphProcessor::readEdges(Graph &G, EdgeInfos &edgeInfos,
   node source, target;
   for (SizeType i = 0; i < edges.Size(); i++) {
     const Value &data = edges[i].GetObject()["data"];
-    sourceId = data["source_node"].GetString();
-    targetId = data["target_node"].GetString();
+    sourceId = data["source"].GetString();
+    targetId = data["target"].GetString();
     source = G.chooseNode(
         [&GA, &sourceId](node n) { return GA.label(n) == sourceId; }, true);
     target = G.chooseNode(
@@ -135,21 +137,12 @@ void GraphProcessor::readEdges(Graph &G, EdgeInfos &edgeInfos,
 }
 
 bool GraphProcessor::parseJSON() {
-  if (!exists(_path)) {
-    return false;
-  }
-  FILE *fp = fopen(_path.c_str(), "r");
-  char readBuf[65536];
-  FileReadStream readStream(fp, readBuf, sizeof(readBuf));
-
-  _document.ParseStream(readStream);
-  fclose(fp);
-  return true;
+  _document.Parse(_jsonStr.c_str());
+  return !_document.HasParseError();
 }
 
-void GraphProcessor::writeJSON(const Graph &graph, const GraphAttributes &GA,
-                               NodeInfos &nodeInfos, EdgeInfos &edgeInfos,
-                               const path &p) {
+string GraphProcessor::writeJSON(const Graph &graph, const GraphAttributes &GA,
+                                 NodeInfos &nodeInfos, EdgeInfos &edgeInfos) {
 
   Document writeDoc;
   writeDoc.SetObject();
@@ -177,12 +170,16 @@ void GraphProcessor::writeJSON(const Graph &graph, const GraphAttributes &GA,
   elms.AddMember("edges", edges, writeDoc.GetAllocator());
   writeDoc.AddMember("elements", elms, writeDoc.GetAllocator());
 
-  FILE *fp = fopen(p.c_str(), "w");
-  char writeBuf[65536];
-  FileWriteStream ws(fp, writeBuf, sizeof(writeBuf));
-  Writer<FileWriteStream> writer(ws);
+  // FILE *fp = fopen(p.c_str(), "w");
+  // char writeBuf[65536];
+  // FileWriteStream ws(fp, writeBuf, sizeof(writeBuf));
+  // Writer<FileWriteStream> writer(ws);
+  // writeDoc.Accept(writer);
+  // fclose(fp);
+  StringBuffer buffer;
+  Writer<StringBuffer> writer(buffer);
   writeDoc.Accept(writer);
-  fclose(fp);
+  return buffer.GetString();
 }
 
 void GraphProcessor::startTimer(const string &msg) {

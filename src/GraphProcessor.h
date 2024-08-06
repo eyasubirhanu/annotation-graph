@@ -39,22 +39,22 @@ typedef vector<thread> Threads;
 
 class GraphProcessor {
 public:
-  GraphProcessor(const string &path) : _path(path) {}
+  GraphProcessor(const string &jsonStr) : _jsonStr(jsonStr) {}
 
-  void processGraph();
+  string processGraph();
 
 private:
   void readNodes(Graph &G, GraphAttributes &GA, NodeInfos &nodeInfos
                  /*const function<bool(const Value &)> &filterNodes*/);
   void readEdges(Graph &G, EdgeInfos &edgeInfos, GraphAttributes &GA);
   bool parseJSON();
-  void writeJSON(const Graph &graph, const GraphAttributes &GA,
-                 NodeInfos &nodeInfos, EdgeInfos &edgeInfos, const path &p);
+  string writeJSON(const Graph &graph, const GraphAttributes &GA,
+                   NodeInfos &nodeInfos, EdgeInfos &edgeInfo);
   void startTimer(const string &msg);
   void stopTimer(const string &msg);
 
   Document _document;
-  path _path;
+  string _jsonStr;
   Timer _timer;
   Threads _threads;
 };

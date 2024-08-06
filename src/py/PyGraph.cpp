@@ -15,15 +15,15 @@ along with this software.  If not, see
 **/
 
 //
-#include <pybind11/pybind11.h>
 #include "../GraphProcessor.h"
+#include <pybind11/pybind11.h>
 #include <string>
 
 namespace py = pybind11;
 using namespace annotation_graph;
 
 PYBIND11_MODULE(ann_graph, m) {
-    py::class_<GraphProcessor>(m, "GraphProcessor")
-            .def(py::init<const std::string&>())
-            .def("process", &GraphProcessor::processGraph);
+  py::class_<GraphProcessor>(m, "GraphProcessor")
+      .def(py::init<const std::string &>())
+      .def("process", &GraphProcessor::processGraph);
 }
