@@ -1,5 +1,3 @@
-set(Python_EXECUTABLE /usr/bin/python3.10)
-
 add_library(annotation_graph SHARED GraphProcessor.cpp GraphProcessor.h NodeInfo.h EdgeInfo.h Utils.h)
 add_executable(annotation_graph_main main.cpp)
 add_library(rapidjson INTERFACE)
