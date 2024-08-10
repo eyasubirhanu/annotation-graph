@@ -57,7 +57,9 @@ string GraphProcessor::processGraph() {
     _threads.push_back(
         thread([&graph, &graphAttr, &NodeInfos, &EdgesInfos, this]() {
           startTimer("Running GO Layout..");
-          hierarchyLayout(graphAttr);
+          fmmmLayout(graphAttr);
+          // hierarchyLayout(graphAttr);
+          // PlanarStraightLayoutAlg(graphAttr);
           // return writeJSON(graph, graphAttr, NodeInfos, EdgesInfos,
           //_path.parent_path() / path("graph.json"));
           // stopTimer("Finished Running GO Layout.");
