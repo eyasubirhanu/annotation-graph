@@ -57,7 +57,12 @@ string GraphProcessor::processGraph() {
     _threads.push_back(
         thread([&graph, &graphAttr, &NodeInfos, &EdgesInfos, this]() {
           startTimer("Running GO Layout..");
-          fmmmLayout(graphAttr);
+          const Value &edge = _document["edges"];
+          if (edge.Size() == 0) {
+            plannerGridLayout(graphAttr);
+          } else {
+            fmmmLayout(graphAttr);
+          }
           // hierarchyLayout(graphAttr);
           // PlanarStraightLayoutAlg(graphAttr);
           // return writeJSON(graph, graphAttr, NodeInfos, EdgesInfos,

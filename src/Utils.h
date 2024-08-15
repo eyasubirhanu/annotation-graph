@@ -15,6 +15,7 @@ along with this software.  If not, see
 **/
 
 //
+
 #include <ogdf/basic/PreprocessorLayout.h>
 #include <ogdf/energybased/FMMMLayout.h>
 #include <ogdf/energybased/FastMultipoleEmbedder.h>
@@ -34,6 +35,7 @@ along with this software.  If not, see
 #include <ogdf/layered/SugiyamaLayout.h>
 #include <ogdf/packing/ComponentSplitterLayout.h>
 #include <ogdf/packing/TileToRowsCCPacker.h>
+#include <ogdf/planarity/PlanarizationGridLayout.h>
 #include <ogdf/planarlayout/PlanarStraightLayout.h>
 #include <rapidjson/document.h>
 using namespace ogdf;
@@ -160,6 +162,11 @@ static void PlanarStraightLayoutAlg(GraphAttributes &GA) {
 static void fmmmLayout(GraphAttributes &GA) {
   FMMMLayout FL;
   FL.call(GA);
+}
+
+static void plannerGridLayout(GraphAttributes &GA) {
+  PlanarizationGridLayout PGL;
+  PGL.call(GA);
 }
 
 static bool isGO(const Value &data) {
